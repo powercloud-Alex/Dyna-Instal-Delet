@@ -183,11 +183,15 @@ request_tokens_for_install() {
   echo ""
   if [ -z "$API_TOKEN" ]; then
     read -r -s -p "Dynatrace API Token: " API_TOKEN
+echo ""
+echo "\[OK\] API Token cargado"
     echo ""
   fi
 
   if [ -z "$INGEST_TOKEN" ]; then
     read -r -s -p "Dynatrace Data Ingest Token: " INGEST_TOKEN
+echo ""
+echo "\[OK\] Data Ingest Token cargado"
     echo ""
   fi
 
