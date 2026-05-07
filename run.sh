@@ -10,21 +10,37 @@ echo "1 - Linux Host"
 echo "2 - Windows Host"
 echo "3 - Kubernetes"
 echo "4 - OpenShift"
+echo "5 - OpenTelemetry Collector"
 
 read -rp "Seleccione modo: " MODE
 
-echo ""
-echo "1 - Check"
-echo "2 - Cleanup"
-echo "3 - Install"
-echo "4 - Verify"
+case "$MODE" in
 
-read -rp "Seleccione opcion: " ACTION
+  1|2|3|4)
 
-case "$ACTION" in
-  1) bash dynatrace_automatizacion_OK.sh check ;;
-  2) bash dynatrace_automatizacion_OK.sh cleanup ;;
-  3) bash dynatrace_automatizacion_OK.sh install ;;
-  4) bash dynatrace_automatizacion_OK.sh verify ;;
-  *) echo "Opcion invalida" ;;
+    echo ""
+    echo "1 - Check"
+    echo "2 - Cleanup"
+    echo "3 - Install"
+    echo "4 - Verify"
+
+    read -rp "Seleccione opcion: " ACTION
+
+    case "$ACTION" in
+      1) bash dynatrace_automatizacion_OK.sh check ;;
+      2) bash dynatrace_automatizacion_OK.sh cleanup ;;
+      3) bash dynatrace_automatizacion_OK.sh install ;;
+      4) bash dynatrace_automatizacion_OK.sh verify ;;
+      *) echo "Opcion invalida" ;;
+    esac
+    ;;
+
+  5)
+    bash dynatrace_otel.sh
+    ;;
+
+  *)
+    echo "Modo invalido"
+    ;;
+
 esac
