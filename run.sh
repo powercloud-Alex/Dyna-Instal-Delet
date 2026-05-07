@@ -1,49 +1,4 @@
 #!/bin/bash
-  1)
-    echo ""
-    echo "1 - Check"
-    echo "2 - Cleanup"
-    echo "3 - Install"
-    echo "4 - Verify"
-
-    read -rp "Seleccione opcion: " ACTION
-
-    case $ACTION in
-      1) bash dynatrace_automatizacion_OK.sh check ;;
-      2) bash dynatrace_automatizacion_OK.sh cleanup ;;
-      3) bash dynatrace_automatizacion_OK.sh install ;;
-      4) bash dynatrace_automatizacion_OK.sh verify ;;
-    esac
-    ;;
-
-  2)
-    echo "Ejecutar desde Windows:"
-    echo "powershell -ExecutionPolicy Bypass -File .\dynatrace_windows.ps1"
-    ;;
-
-  3|4)
-    echo ""
-    echo "1 - Check"
-    echo "2 - Cleanup"
-    echo "3 - Install"
-    echo "4 - Verify"
-
-    read -rp "Seleccione opcion: " ACTION
-
-    case $ACTION in
-      1) bash dynatrace_automatizacion_OK.sh check ;;
-      2) bash dynatrace_automatizacion_OK.sh cleanup ;;
-      3) bash dynatrace_automatizacion_OK.sh install ;;
-      4) bash dynatrace_automatizacion_OK.sh verify ;;
-    esac
-    ;;
-
-  *)
-    echo "Modo invalido"
-    ;;
-esac
-```bash
-#!/bin/bash
 
 clear
 
@@ -55,27 +10,21 @@ echo "1 - Linux Host"
 echo "2 - Windows Host"
 echo "3 - Kubernetes"
 echo "4 - OpenShift"
+
 read -rp "Seleccione modo: " MODE
 
-case $MODE in
-  1)
-    bash dynatrace_linux.sh
-    ;;
+echo ""
+echo "1 - Check"
+echo "2 - Cleanup"
+echo "3 - Install"
+echo "4 - Verify"
 
-  2)
-    echo "Ejecutar desde Windows:"
-    echo "powershell -ExecutionPolicy Bypass -File .\\dynatrace_windows.ps1"
-    ;;
+read -rp "Seleccione opcion: " ACTION
 
-  3)
-    bash dynatrace_k8s.sh
-    ;;
-
-  4)
-    bash dynatrace_k8s.sh
-    ;;
-
-  *)
-    echo "Modo invalido"
-    ;;
+case "$ACTION" in
+  1) bash dynatrace_automatizacion_OK.sh check ;;
+  2) bash dynatrace_automatizacion_OK.sh cleanup ;;
+  3) bash dynatrace_automatizacion_OK.sh install ;;
+  4) bash dynatrace_automatizacion_OK.sh verify ;;
+  *) echo "Opcion invalida" ;;
 esac
