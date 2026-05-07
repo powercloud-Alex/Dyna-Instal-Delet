@@ -16,29 +16,29 @@ read -rp "Seleccione opcion: " ACTION
 case "$ACTION" in
 
 1)
-
   echo ""
   echo "[CHECK] OpenTelemetry Collector"
-
-  kubectl get pods -n dynatrace | grep -i otel
-
-  kubectl get svc -n dynatrace | grep -i otel
-
+  kubectl get deployment dynatrace-otel -n dynatrace 2>/dev/null || echo "Deployment dynatrace-otel no encontrado"
+  kubectl get svc dynatrace-otel -n dynatrace 2>/dev/null || echo "Service dynatrace-otel no encontrado"
+  kubectl get pods -n dynatrace | grep -i otel || echo "Pods OTel no encontrados"
   ;;
 
 2)
-
   echo ""
   echo "[INSTALL] OpenTelemetry Collector"
 
-  kubectl create namespace dynatrace --dry-run=client -o yaml | kubectl apply -f -
+  read -rp "Tenant Dynatrace URL ej https://abc12345.apps.dynatrace.com: " TENANT
+  ENV_ID=$(echo "$TENANT" | sed 's|https://||' | cut -d'.' -f1)
+  DT_ENDPOINT="https://${ENV_ID}.live.dynatrace.com/api/v2/otlp"
 
-  read -rp "Dynatrace OTLP Endpoint: " DT_ENDPOINT
+  echo "[OK] Endpoint OTLP: $DT_ENDPOINT"
 
   echo ""
-  read -s -p "Dynatrace API Token: " DT_API_TOKEN
+  read -s -p "Dynatrace OTEL API Token: " DT_API_TOKEN
   echo ""
   echo "[OK] API Token cargado"
+
+  kubectl create namespace dynatrace --dry-run=client -o yaml | kubectl apply -f -
 
   kubectl create secret generic dynatrace-otelcol-dt-api-credentials \
     -n dynatrace \
@@ -48,151 +48,111 @@ case "$ACTION" in
 
   echo "[OK] Secret creado"
 
-kubectl apply -f - <<EOF
+kubectl apply -f - <<EOF2
 apiVersion: v1
 kind: ConfigMap
-
 metadata:
   name: dynatrace-otel-config
   namespace: dynatrace
-
 data:
   config.yaml: |
-
     receivers:
       otlp:
         protocols:
-
           grpc:
             endpoint: "0.0.0.0:4317"
-
           http:
             endpoint: "0.0.0.0:4318"
 
     exporters:
-
       otlphttp:
         endpoint: \${env:DT_ENDPOINT}
-
         timeout: 30s
-
         tls:
           insecure_skip_verify: true
-
         headers:
           Authorization: "Api-Token \${env:DT_API_TOKEN}"
 
     service:
-
       pipelines:
-
         traces:
           receivers: [otlp]
           exporters: [otlphttp]
-
         metrics:
           receivers: [otlp]
           exporters: [otlphttp]
-
         logs:
           receivers: [otlp]
           exporters: [otlphttp]
-EOF
+EOF2
 
 echo "[OK] ConfigMap creado"
 
-kubectl apply -f - <<EOF
+kubectl apply -f - <<EOF3
 apiVersion: apps/v1
 kind: Deployment
-
 metadata:
   name: dynatrace-otel
   namespace: dynatrace
-
 spec:
-
   replicas: 1
-
   selector:
     matchLabels:
       app: dynatrace-otel
-
   template:
-
     metadata:
       labels:
         app: dynatrace-otel
-
     spec:
-
       containers:
-
       - name: otel-collector
-
         image: otel/opentelemetry-collector-contrib:latest
-
         args:
           - "--config=/etc/otelcol/config.yaml"
-
         env:
-
         - name: DT_ENDPOINT
           valueFrom:
             secretKeyRef:
               name: dynatrace-otelcol-dt-api-credentials
               key: DT_ENDPOINT
-
         - name: DT_API_TOKEN
           valueFrom:
             secretKeyRef:
               name: dynatrace-otelcol-dt-api-credentials
               key: DT_API_TOKEN
-
         ports:
         - containerPort: 4317
         - containerPort: 4318
-
         volumeMounts:
         - name: config
           mountPath: /etc/otelcol
-
       volumes:
       - name: config
         configMap:
           name: dynatrace-otel-config
-
 ---
 apiVersion: v1
 kind: Service
-
 metadata:
   name: dynatrace-otel
   namespace: dynatrace
-
 spec:
-
   selector:
     app: dynatrace-otel
-
   ports:
-
   - name: grpc
     port: 4317
     targetPort: 4317
-
   - name: http
     port: 4318
     targetPort: 4318
-EOF
+EOF3
 
-echo "[OK] Deployment creado"
-
-kubectl get pods -n dynatrace
-
+  echo "[OK] Deployment y Service creados"
+  kubectl get pods -n dynatrace | grep -i otel || true
   ;;
 
 3)
-
   echo ""
   echo "[TEST] Trace OpenTelemetry"
 
@@ -209,36 +169,22 @@ kubectl get pods -n dynatrace
     -H "Content-Type: application/json" \
     -d "{\"resourceSpans\":[{\"resource\":{\"attributes\":[{\"key\":\"service.name\",\"value\":{\"stringValue\":\"test-service\"}}]},\"scopeSpans\":[{\"spans\":[{\"traceId\":\"5B8EFFF798038103D269B633813FC60C\",\"spanId\":\"EEE19B7EC3C1B174\",\"name\":\"test-span\",\"startTimeUnixNano\":\"$START\",\"endTimeUnixNano\":\"$END\",\"kind\":2,\"status\":{\"code\":1}}]}]}]}"
 
-  echo ""
-  echo "[INFO] Esperando pod test..."
-
   sleep 5
-
   kubectl logs otel-test -n dynatrace
-
   ;;
 
 4)
-
   echo ""
   echo "[CLEANUP] OpenTelemetry Collector"
-
   kubectl delete deployment dynatrace-otel -n dynatrace --ignore-not-found
-
   kubectl delete svc dynatrace-otel -n dynatrace --ignore-not-found
-
   kubectl delete configmap dynatrace-otel-config -n dynatrace --ignore-not-found
-
   kubectl delete secret dynatrace-otelcol-dt-api-credentials -n dynatrace --ignore-not-found
-
   kubectl delete pod otel-test -n dynatrace --ignore-not-found
-
   ;;
 
 *)
-
   echo "Opcion invalida"
-
   ;;
 
 esac
